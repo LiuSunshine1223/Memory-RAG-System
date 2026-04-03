@@ -1,0 +1,17 @@
+# 核心深度学习与大模型底座
+torch>=2.0.0
+transformers>=4.30.0
+accelerate>=0.21.0
+
+# 向量表征与 RAG 检索
+sentence-transformers>=2.2.2
+FlagEmbedding>=1.2.0
+faiss-gpu>=1.7.2
+
+# 基础数据处理与通信
+numpy>=1.24.0
+pandas>=2.0.0
+requests>=2.31.0
+
+# 环境变量隔离
+python-dotenv>=1.0.0

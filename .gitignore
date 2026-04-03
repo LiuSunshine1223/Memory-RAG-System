@@ -1,0 +1,13 @@
+# 排除大模型权重和数据库缓存 (防止 Git 崩溃)
+# 先封杀(*)，再特赦(!)
+models/*
+!models/embedding.py
+!models/llm.py
+!models/reranker.py
+storage/*
+!storage/.gitkeep
+
+# 排除 Python 缓存和私密环境文件
+__pycache__/
+*.pyc
+.env
