@@ -52,6 +52,9 @@ def main():
         if os.path.exists(Config.DATA_PATH):
             with open(Config.DATA_PATH, 'r', encoding='utf-8') as f:
                 raw_text = f.read()
+                # .split(): 把所有空格、多个空格、换行、制表符都切掉，形成以字符串为单位的列表；
+                # " ".join(): 将列表中的字符串用空格连接起来，形成一个新的字符串。
+                # 这样就实现了对原始文本的清洗，去掉了多余的空白字符，使得文本更加紧凑和规范。
                 clean_text = " ".join(raw_text.split())
 
             if clean_text:

@@ -14,7 +14,7 @@ class Config:
     LLM_MODEL = os.getenv("LLM_MODEL", "llama3:8b")
 
     # 数据路径
-    DATA_PATH = os.getenv("DATA_PATH", "./data/three-body.txt")
+    DATA_PATH = os.getenv("DATA_PATH", "./data/Journey to the West.txt")
 
 
     # 向量库参数
