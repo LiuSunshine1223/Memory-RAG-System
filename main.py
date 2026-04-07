@@ -17,7 +17,7 @@ from models.reranker import RerankerModel
 from models.llm import LLMModel
 from retrieval.vector_store import VectorStore
 from memory.memory_manager import MemoryManager
-from utils.text_splitter import FixedLengthChunker, SemanticChunker
+from utils.text_splitter import SemanticChunker
 from pipeline.rag_pipeline import RAGPipeline
 from config import Config
 from monitor import VRAMMonitor
@@ -33,7 +33,7 @@ def main():
     try:
         monitor.start()
 
-        # --- 初始化组件 ---
+        # 1 模型加载与 GPU 预热
         # 加载 Embedding 模型 (BGE-small-zh)
         embed_model = EmbeddingModel(Config.EMBED_MODEL_PATH)
 
@@ -46,7 +46,7 @@ def main():
         # 初始化切分器
         chunker = SemanticChunker(Config.CHUNK_SIZE, Config.OVERLAP_SENTENCE)
 
-        # --- 初始知识入库  ---
+        # 2 基础知识读取与文本清洗
         base_vs = VectorStore(Config.BASE_DB_PATH, Config.VECTOR_DIM)
 
         if os.path.exists(Config.DATA_PATH):
@@ -57,6 +57,7 @@ def main():
                 # 这样就实现了对原始文本的清洗，去掉了多余的空白字符，使得文本更加紧凑和规范。
                 clean_text = " ".join(raw_text.split())
 
+            # 离线向量化入库，冷启动时为基础知识库建立索引
             if clean_text:
                 # 只有当库里还没数据时，才进行初始入库，避免重复
                 if base_vs.total_count == 0:
@@ -72,11 +73,12 @@ def main():
         else:
             print(f" 警告: 未找到初始文档 {Config.DATA_PATH}，将开启空白记忆模式。")
 
-        # 动态记忆库（用户对话的读写库）
+        # 3 正式在线问答业务流
+        # 加载动态记忆库
         memory_vs = VectorStore(Config.MEMORY_DB_PATH, Config.VECTOR_DIM)
         print(f" 动态记忆库: 加载完毕，当前拥有 {memory_vs.total_count} 条历史记忆。")
 
-        # --- 实例化记忆管家和 Pipeline ---
+        # 实例化记忆管家和 Pipeline
         memory_manager = MemoryManager(
             base_vs = base_vs,
             memory_vs = memory_vs,

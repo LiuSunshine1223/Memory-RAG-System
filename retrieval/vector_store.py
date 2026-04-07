@@ -1,4 +1,5 @@
-# 向量数据库：负责管理FAISS(C++构建)索引和文本内容的持久化存储。
+# 向量存储库：负责管理FAISS(C++构建)索引和文本内容的持久化存储。
+
 import faiss
 import os
 import numpy as np
@@ -9,6 +10,7 @@ class VectorStore:
         self.storage_path = storage_path
         self.dimension = int(dimension)  # 强制转为整数，防止 FAISS 报错
 
+        # “双轨制”存储
         # faiss.index存储向量内容，texts.pkl存储文本块(3-5句话)内容，二者通过索引位置一一对应
         self.index_file = os.path.join(storage_path, "faiss.index") # 向量索引的文件路径
         self.text_file = os.path.join(storage_path, "texts.pkl") # 文本内容的文件路径
@@ -44,7 +46,7 @@ class VectorStore:
         # 实时保存到硬盘（实现持久化记忆）
         self.save()
 
-    # 搜索最相似的 recall_k 条文本
+    # 粗筛召回：搜索最相似的 recall_k 条文本
     def search(self, query_vector, recall_k, max_distance=None):
 
         if self.index.ntotal == 0:

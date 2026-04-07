@@ -5,6 +5,20 @@
 
 核心创新点在于打破了传统 RAG 系统的“无状态”痛点，设计了独立的 **MemoryManager（动态记忆管理器）**。系统不仅能基于静态基础专业知识库进行精准问答，还能在多轮对话中动态捕获用户的个性化偏好，实现真正的“长期记忆”。
 
+## 系统架构图 (Architecture)
+
+### 1. 离线冷启动与知识建库 (Phase 1)
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/e479385d-2e38-4cac-bc4b-a1d8a1c6f0eb" width="800">
+  <p><em>图 1: 基础知识库 O(n) 向量化与硬写入流</em></p>
+</div>
+
+### 2. 在线并发问答与记忆沉淀闭环 (Phase 2)
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/ec6d7e73-c470-41f8-838d-54a07009f75b" width="800">
+  <p><em>图 2: RAG 核心引擎在线双轨调度流与动态记忆更新</em></p>
+</div>
+
 ## 核心架构亮点
 - **双轨向量检索架构**：物理隔离 `Base Knowledge`（高容量基础库）与 `User Memory`（动态记忆库），阻断核心知识被日常闲聊污染。
 - **深度检索引擎**：融合双塔向量召回 (Bi-Encoder, `bge-small`) 粗排与交叉编码器 (Cross-Encoder, `bge-reranker`) 精排，极大提升长尾记忆的提取精度。

@@ -3,12 +3,12 @@
 from FlagEmbedding import FlagReranker
 
 class RerankerModel:
-    def __init__(self, model_path_or_name):
+    def __init__(self, model_path):
         # “精度”指的就是张量（Tensor）里面，每一个具体数值的存储规格。
         # 数值精度越高（更精细的表示），模型性能不一定越好，甚至可能更差。
         # 默认模型的精度是fp32(单精度)
         # use_fp16=True：使用半精度（fp16）进行推理，减少显存占用和加速计算，但可能会略微降低精度。
-        self.model = FlagReranker(model_path_or_name, use_fp16=True)
+        self.model = FlagReranker(model_path, use_fp16=True)
         print(" Rerank 模型加载完毕！")
 
     def rank(self, query, docs, rerank_k):

@@ -18,6 +18,7 @@ class MemoryManager:
         self.memory_rerank_k = memory_rerank_k
         self.short_term_history = []
 
+    # 1.记忆沉淀逻辑：只写不读
     # 短期记忆：只保留最近的 5 条对话，提供给 LLM 作为上下文参考，帮助它更好地理解当前对话环境和用户需求。
     def add_to_short_term(self, query, answer):
         self.short_term_history.append({"q": query, "a": answer})
@@ -27,6 +28,7 @@ class MemoryManager:
             # 这是 FIFO 的策略
             self.short_term_history.pop(0)
 
+    # 长期记忆：把用户的每一次提问和 AI 的每一次回答都打包成一个“记忆碎片”，经过切分、向量化、去重后存入动态记忆库中，供未来检索调用。
     def memorize_to_long_term(self, query, answer):
         # llama3在阅读 记忆碎片 看到英文(User、Assistant)时，
         # 它的注意力会被带偏，更倾向于用英文回复
@@ -57,6 +59,7 @@ class MemoryManager:
                 self.memory_vs.add_texts([chunk], np.array([new_vec]))
                 print(f" MemoryManager: 捕获到新知识，已存入动态记忆库中。")
 
+    # 2.检索调度逻辑：只读不写
     def get_chat_context(self):
         context = ""
         for turn in self.short_term_history:

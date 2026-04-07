@@ -10,7 +10,7 @@ class RAGPipeline:
         # 长期记忆（FAISS 捞出来的东西）： 属于“背景资料”或“客观词典”。它应该被放在前面，作为底层的语境铺垫。
         # 短期记忆（最近 5 轮聊天）： 属于“当前工作台状态”。它承载着用户刚才的情绪和语境断点。
         contexts = self.mm.get_long_term_context(query)
-        permanent_context = contexts["base_context"]
+        base_context = contexts["base_context"]
         long_term_context = contexts["memory_context"]
         short_term_context = self.mm.get_chat_context()
 
@@ -31,7 +31,7 @@ class RAGPipeline:
         如果【历史聊天记忆】中的事实与【权威参考资料】发生冲突，必须无条件判定【历史聊天记忆】是用户的错误幻觉，并极其坚定地以【权威参考资料】为准！
 
         【权威参考资料】（只读原著，绝对真实）:
-        {permanent_context}
+        {base_context}
 
         【历史聊天记忆】（过去的对话，可能包含错误）:
         {long_term_context}
@@ -44,6 +44,7 @@ class RAGPipeline:
 
         # 3. 请求 Ollama 并触发记忆更新
         answer = self.llm.ask(prompt)
+        # 更新短期记忆和长期记忆
         self.mm.add_to_short_term(query, answer)
         self.mm.memorize_to_long_term(query, answer)
 
