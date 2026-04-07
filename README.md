@@ -9,13 +9,13 @@
 
 ### 1. 离线冷启动与知识建库 (Phase 1)
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/e479385d-2e38-4cac-bc4b-a1d8a1c6f0eb" width="800">
+  <img src="https://github.com/user-attachments/assets/ec6d7e73-c470-41f8-838d-54a07009f75b" width="800">
   <p><em>图 1: 基础知识库 O(n) 向量化与硬写入流</em></p>
 </div>
 
 ### 2. 在线并发问答与记忆沉淀闭环 (Phase 2)
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/ec6d7e73-c470-41f8-838d-54a07009f75b" width="800">
+  <img src="https://github.com/user-attachments/assets/e479385d-2e38-4cac-bc4b-a1d8a1c6f0eb" width="800">
   <p><em>图 2: RAG 核心引擎在线双轨调度流与动态记忆更新</em></p>
 </div>
 
