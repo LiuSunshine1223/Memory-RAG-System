@@ -46,7 +46,7 @@ def main():
         # 初始化切分器
         chunker = SemanticChunker(Config.CHUNK_SIZE, Config.OVERLAP_SENTENCE)
 
-        # 2 基础知识读取与文本清洗
+        # 2 基础知识读取与文本简单清洗
         base_vs = VectorStore(Config.BASE_DB_PATH, Config.VECTOR_DIM)
 
         if os.path.exists(Config.DATA_PATH):
