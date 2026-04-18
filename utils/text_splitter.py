@@ -27,43 +27,7 @@ class FixedLengthChunker:
             start += (self.chunk_size - self.chunk_overlap)
         return chunks
 
-# 2. 递归切分器：优雅地处理各种文本结构，最大程度保留上下文连续性，适合对文本结构敏感的场景。
-class RecursiveSplitter:
-    def __init__(self, chunk_size):
-        self.chunk_size = chunk_size
-        # 核心灵魂：降级切分符列表 (从大到小：双回车段落 -> 单回车换行 -> 句号 -> 逗号 -> 强行无情切断)
-        self.separators = ["\n\n", "\n", "。", "，", ""]
-
-    def split_text(self, text, sep_index=0):
-        """真正的递归函数：不停地调用自己，直到切块满足大小限制"""
-
-        # 递归的终止条件：如果当前文本已经小于限制，直接安全返回
-        if len(text) <= self.chunk_size:
-            return [text]
-
-        # 拿到当前的“刀”（分隔符）
-        current_sep = self.separators[sep_index]
-
-        # 极端兜底：如果所有标点符号都用完了（到了 ""），只能像你之前的代码那样强行切片了
-        if current_sep == "":
-            return [text[i:i + self.chunk_size] for i in range(0, len(text), self.chunk_size)]
-
-        # 按照当前的标点符号（比如段落 \n\n）把文章大卸八块
-        splits = text.split(current_sep)
-
-        final_chunks = []
-        for split in splits:
-            if len(split) <= self.chunk_size:
-                final_chunks.append(split)  # 完美，这段话没超标，保留！
-            else:
-                # 核心递归点：发现有个超级长的段落，超过了 400 字！
-                # 怎么办？换一把更细的刀（sep_index + 1，比如换成按句号切），去专门对付这个长段落！
-                sub_chunks = self.split_text(split, sep_index + 1)
-                final_chunks.extend(sub_chunks)
-
-        return final_chunks
-
-# 3. 语义切分器：在保证语义完整的前提下，尽可能地切分文本，适合对文本结构和语义连续性都敏感的场景。
+# 2. 语义切分器：在保证语义完整的前提下，尽可能地切分文本，适合对文本结构和语义连续性都敏感的场景。
 class SemanticChunker:
     def __init__(self, max_chunk_size, overlap_sentences):
         """

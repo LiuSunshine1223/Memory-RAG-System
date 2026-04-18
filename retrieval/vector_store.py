@@ -55,6 +55,7 @@ class VectorStore:
         query_vector = np.array(query_vector).astype('float32')
         # FAISS 搜索返回 距离(distances) 和 索引(indices)
         # distances = 各维度差的平方和，越小代表越相似；indices = 对应文本在 self.texts 中的索引位置
+        # 按top-k的方式返回最相似的 recall_k 条文本的距离和索引
         distances, indices = self.index.search(query_vector, recall_k)
         results = []
         # 因为本模型的设计初衷就是一个问题，一个回答

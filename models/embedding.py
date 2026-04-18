@@ -1,10 +1,11 @@
-# 粗排序模型（双塔 Bi-Encoder）与FAISS天作之合
-
-# nn.Embedding是词表级别的查表，没有上下文信息，存放所有token_id的向量
-
+# 双塔 Bi-Encoder（bge-small-zh-v1.5）与FAISS天作之合
 # Encoder-only模型：BERT, RoBERTa, bge-small-zh-v1.5, bge-reranker-base
 
-# bge-small-zh-v1.5是句子级别的编码器，本质是预训练好的Transformer Encoder-only模型（最后加了池化层），推理将一整句话只能浓缩成“一个”向量。
+# SentenceTransformer 和 bge-small-zh-v1.5 的配合
+# 1. SentenceTransformer负责用内置Tokenizer将文本切碎，转化成 token_id 这种数字形式的张量。
+# 2. 张量给到 BGE-small-zh-v1.5后，前向传播得到张量矩阵（包含每个字词的特征）。
+# 3. SentenceTransformer将张量矩阵进行pooling操作，把每个字词的特征压缩成一个固定长度的向量（512维），这个向量就代表了整句话的语义信息。
+# 4. SentenceTransformer再将512维度向量 L2归一化，为了让你后续在 FAISS 里算欧氏距离或者余弦相似度更准。
 from sentence_transformers import SentenceTransformer
 import torch
 

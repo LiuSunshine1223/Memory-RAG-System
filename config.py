@@ -31,8 +31,8 @@ class Config:
     # 写入阈值
     THRESHOLD = 0.6 # 记忆入库的距离阈值，只有当新记忆与库中最相似的记忆的距离大于该值时，才会被认为是新的、独特的记忆并存入库中，避免重复记忆。
     #读取阈值
-    BASE_MAX_DISTANCE = 1.2  # 基础库的最大容忍距离（严格）
-    MEMORY_MAX_DISTANCE = 1.5  # 记忆库的最大容忍距离（宽松）
+    BASE_MAX_DISTANCE = 1.2  # 基础库的最大容忍距离
+    MEMORY_MAX_DISTANCE = 1.5  # 记忆库的最大容忍距离
     # 基础知识库
     BASE_RECALL_K = 10 # FAISS 粗排召回数量。
     BASE_RERANK_K = 3 # BGE 精排最终保留数量。

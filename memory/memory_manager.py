@@ -30,7 +30,7 @@ class MemoryManager:
 
     # 长期记忆：把用户的每一次提问和 AI 的每一次回答都打包成一个“记忆碎片”，经过切分、向量化、去重后存入动态记忆库中，供未来检索调用。
     def memorize_to_long_term(self, query, answer):
-        # llama3在阅读 记忆碎片 看到英文(User、Assistant)时，
+        # llama3在阅读 记忆碎片 看到英文(User、Assistant)时
         # 它的注意力会被带偏，更倾向于用英文回复
         # combined_text = f"User: {query} | Assistant: {answer}"
         combined_text = f"用户: {query} | AI: {answer}"

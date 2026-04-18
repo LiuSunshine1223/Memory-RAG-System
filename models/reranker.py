@@ -1,4 +1,4 @@
-# 精排序模型（交叉编码器 Cross-Encoder）
+# 交叉编码器 Cross-Encoder（bge-reranker-base）
 
 from FlagEmbedding import FlagReranker
 
