@@ -2,9 +2,9 @@
 
 ## 项目简介
 
-本项目是一个基于本地化大模型（Ollama + Llama3）与 FAISS 向量库构建的检索增强生成（RAG）系统。
+本项目是一个基于本地化大模型 `Ollama + Llama3:8B`、`BGE-small-zh-v1.5`、`BGE-reranker-base` 与 `FAISS` 向量库构建的本地化 Memory RAG 系统。
 
-系统设计了独立的 `MemoryManager` 动态记忆管理器，将静态基础知识库与用户长期记忆库进行物理隔离；同时在 `RAGPipeline` 前置轻量级 `QueryPolicy` 意图分流层，对身份闲聊、历史记忆回忆和普通 RAG 问答进行不同路径调度。
+系统设计了独立的 `MemoryManager` 动态记忆管理器，将静态基础知识库 `Base Knowledge` 与用户长期记忆库 `User Memory` 进行物理隔离；同时在 `RAGPipeline` 前置轻量级 `QueryPolicy` 意图分流层，将用户输入划分为 `direct_chat`、`memory_write`、`memory_recall` 和 `normal_rag` 四类，并根据不同意图选择不同处理路径。
 
 系统不仅能够基于静态基础知识库进行问答，还能在多轮对话中选择性沉淀用户目标、偏好和计划，并支持程序重启后的长期记忆召回。
 
@@ -19,7 +19,7 @@
   <p><em>图 1: 离线冷启动：句子边界切分与基础知识库向量化</em></p>
 </div>
 
-### 2. 在线问答与记忆沉淀闭环
+### 2. 在线问答、意图路由与记忆沉淀闭环
 
 <div align="center">
   <img src="./assets/online_qa.jpg" width="800">
@@ -30,7 +30,7 @@
 
 ## 核心架构亮点
 
-- **轻量级 QueryPolicy 意图分流**：在 `RAGPipeline` 前置规则式意图判断，将用户输入划分为 `direct_chat`、`memory_recall` 与 `normal_rag` 三类，避免身份闲聊类问题被基础知识库带偏，并为“我之前说过什么”等历史记忆回忆问题提供专门检索路径。
+- **轻量级 QueryPolicy 意图分流**：在 `RAGPipeline` 前置规则式意图判断，将用户输入划分为 `direct_chat`、`memory_write`、`memory_recall` 与 `normal_rag` 四类。身份闲聊类问题直接旁路回答，用户目标 / 计划 / 偏好类输入进入长期记忆写入流程，历史记忆回忆类问题走专门的 `User Memory` 检索路径，普通知识问答则进入完整 RAG 检索链路。
 
 - **双库向量检索架构**：物理隔离 `Base Knowledge`（静态基础知识库）与 `User Memory`（动态长期记忆库），降低日常对话、基础知识和用户长期记忆之间的交叉污染。
 
@@ -38,7 +38,7 @@
 
 - **Bi-Encoder + Cross-Encoder 两阶段检索**：使用 `bge-small-zh-v1.5` 进行向量召回，再使用 `bge-reranker-base` 进行精排，提升基础知识库与长期记忆库的检索质量。
 
-- **历史记忆回忆检索策略**：针对“我之前说过什么 / 你还记得我吗”等泛化记忆查询，单独采用 `memory_recall` 检索路径，只检索 `User Memory`，放宽召回阈值并跳过 reranker，提升重启后长期记忆召回稳定性。
+- **历史记忆回忆检索策略**：针对“我之前说过什么 / 你还记得我吗”等泛化记忆查询，单独采用 `memory_recall` 检索路径，优先检索 `User Memory`，跳过 `Base Knowledge` 干扰，并避免将回忆类 Query 再次写入长期记忆库，提升重启后长期记忆召回稳定性。
 
 - **U 型 Prompt 组装策略**：将基础知识库放在 Prompt 前部，近期连续对话放在 Prompt 后部，结合大模型首尾注意力偏好，缓解部分 Lost in the Middle 现象。
 
@@ -65,9 +65,9 @@
 MemoryRAG/
 ├── assets/
 │   ├── offline_cold_start.jpg       # 离线知识建库流程图
-│   └── online_qa.jpg                # 在线问答与记忆沉淀流程图
-│   └── test_log1.png                # 测试日志1图
-│   └── test_log2.png                # 测试日志2图
+│   ├── online_qa.jpg                # 在线问答、意图路由与记忆沉淀流程图
+│   ├── test_log1.png                # 测试日志截图 1
+│   └── test_log2.png                # 测试日志截图 2
 ├── data/                            # 基础知识库文本存放处
 ├── docs/
 │   ├── test_cases.md                # 轻量化功能测试用例
