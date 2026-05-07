@@ -16,14 +16,14 @@
 
 <div align="center">
   <img src="./assets/offline_cold_start.jpg" width="800">
-  <p><em>图 1: 基础知识库向量化</em></p>
+  <p><em>图 1: 离线冷启动：句子边界切分与基础知识库向量化</em></p>
 </div>
 
 ### 2. 在线问答与记忆沉淀闭环
 
 <div align="center">
   <img src="./assets/online_qa.jpg" width="800">
-  <p><em>图 2: RAG 核心引擎在线双轨调度流与动态记忆更新</em></p>
+  <p><em>图 2: 在线阶段：QueryPolicy 意图路由、双库检索与动态记忆更新</em></p>
 </div>
 
 ---
@@ -66,6 +66,8 @@ MemoryRAG/
 ├── assets/
 │   ├── offline_cold_start.jpg       # 离线知识建库流程图
 │   └── online_qa.jpg                # 在线问答与记忆沉淀流程图
+│   └── test_log1.png                # 测试日志1图
+│   └── test_log2.png                # 测试日志2图
 ├── data/                            # 基础知识库文本存放处
 ├── docs/
 │   ├── test_cases.md                # 轻量化功能测试用例
