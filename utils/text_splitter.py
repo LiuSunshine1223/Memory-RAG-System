@@ -6,7 +6,6 @@ class FixedLengthChunker:
     def __init__(self, chunk_size, chunk_overlap):
         # chunk_size: 每个文本块的最大长度
         # chunk_overlap: 相邻文本块之间的重叠部分长度。决定了扫描仪在往前挪动时，必须要倒退多少字，防止一句话被硬生生切断后。
-        # chunk_overlap: 相邻文本块之间的重叠部分长度。决定了扫描仪在往前挪动时，必须要倒退多少字，防止一句话被硬生生切断后。
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
 
@@ -27,8 +26,8 @@ class FixedLengthChunker:
             start += (self.chunk_size - self.chunk_overlap)
         return chunks
 
-# 2. 语义切分器：在保证语义完整的前提下，尽可能地切分文本，适合对文本结构和语义连续性都敏感的场景。
-class SemanticChunker:
+# 2. 句子边界切分器：在保证语义完整的前提下，尽可能地切分文本，适合对文本结构和语义连续性都敏感的场景。
+class SentenceBoundaryChunker:
     def __init__(self, max_chunk_size, overlap_sentences):
         """
         max_chunk_size: 每个切片的最大字数（建议 300-400）
@@ -41,9 +40,18 @@ class SemanticChunker:
         if not text:
             return []
 
-        # 1. 核心正则 Split：按句号、叹号、问号、省略号、换行切分，且保留标点！
-        # (?<=...) 是正则的后行断言，意思是“在这个标点符号之后切开”，这样标点符号就会留在上一句的末尾。
-        sentences = re.split(r'(?<=[。！？\n])', text)
+        # 1. 终极正则 findall
+        # 不使用 split的原因：因为 re.split(r'(?<=[！])', text)会将 "太棒了！！！" 中后续两个感叹号独立开，这个语义切分就失败了。
+        # r : 正则表达式的起始标志。
+        # [] : 定义一个字符类，匹配其中任意一个字符。
+        # ^ : 在字符类的开头，表示取反，即匹配不在字符类中的字符。
+        # + : 表示前面的字符类可以重复出现一次或多次。
+        # [^。！？\.!\?\n]+ : 匹配一个或多个非句子结束符的文本。（英文标点.和?在正则中有特殊含义，所以加了 \ 转义）
+        # (?: ... ) : 非捕获组，表示这个括号内的内容是一个整体，但不需要单独捕获它作为一个分组，节省内存。
+        # $ : 匹配字符串的结尾，确保最后一个句子也能被正确切分出来。
+        # (?:[。！？\.!\?\n]+|$) : 匹配一个或多个句子结束符，或者字符串的结尾。
+        pattern = r'[^。！？\.!\?\n]+(?:[。！？\.!\?\n]+|$)'
+        sentences = re.findall(pattern, text)
 
         # 去除切分后可能产生的纯空格或空字符串
         sentences = [s.strip() for s in sentences if s.strip()]

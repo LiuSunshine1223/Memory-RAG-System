@@ -8,6 +8,9 @@ class RerankerModel:
         # 数值精度越高（更精细的表示），模型性能不一定越好，甚至可能更差。
         # 默认模型的精度是fp32(单精度)
         # use_fp16=True：使用半精度（fp16）进行推理，减少显存占用和加速计算，但可能会略微降低精度。
+        # 使用 FlagReranker 加载 BGE reranker 模型
+        # FlagReranker 是 FlagEmbedding 提供的 reranker 专用封装
+        # 它不生成 embedding，而是直接对 query-document 文本对计算相关性分数
         self.model = FlagReranker(model_path, use_fp16=True)
         print(" Rerank 模型加载完毕！")
 

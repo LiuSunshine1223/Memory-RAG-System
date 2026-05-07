@@ -17,7 +17,7 @@ from models.reranker import RerankerModel
 from models.llm import LLMModel
 from retrieval.vector_store import VectorStore
 from memory.memory_manager import MemoryManager
-from utils.text_splitter import SemanticChunker
+from utils.text_splitter import SentenceBoundaryChunker
 from pipeline.rag_pipeline import RAGPipeline
 from config import Config
 from monitor import VRAMMonitor
@@ -44,7 +44,7 @@ def main():
         llm = LLMModel(Config.OLLAMA_URL, Config.LLM_MODEL)
 
         # 初始化切分器
-        chunker = SemanticChunker(Config.CHUNK_SIZE, Config.OVERLAP_SENTENCE)
+        chunker = SentenceBoundaryChunker(Config.CHUNK_SIZE, Config.OVERLAP_SENTENCE)
 
         # 2 基础知识读取与文本简单清洗
         base_vs = VectorStore(Config.BASE_DB_PATH, Config.VECTOR_DIM)
