@@ -1,4 +1,4 @@
-# Memory RAG System: 带有动态上下文记忆的本地化检索增强生成系统
+# Memory-RAG-System 自研多轮记忆知识库问答系统
 
 ## 项目简介
 

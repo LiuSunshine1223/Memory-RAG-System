@@ -177,10 +177,10 @@ class RAGPipeline:
 
         # 3 根据 query 意图选择记忆检索策略
         if query_intent == "memory_recall":
-            # 只查 Memory FAISS，放宽召回阈值，跳过 Base FAISS。
+            # 历史记忆回忆问题：只查 Memory FAISS，跳过 Base FAISS。
             contexts = self.mm.get_memory_recall_context(query)
         else:
-            # 查 Base FAISS + Memory FAISS，使用正常距离阈值和 reranker。
+            # 默认normal_rag：查 Base FAISS + Memory FAISS，使用正常距离阈值和 reranker。
             contexts = self.mm.get_long_term_context(query)
 
         base_context = contexts["base_context"]

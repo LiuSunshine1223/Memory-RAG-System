@@ -171,14 +171,10 @@ class MemoryManager:
         memory_docs = []
 
         if self.memory_vs.total_count > 0:
-            raw_memory = self.memory_vs.search(
-                q_emb,
-                self.memory_recall_k,
-                1e9,  # 放宽召回距离阈值，尽量召回已有长期记忆
-            )
-
+            # 放宽召回距离阈值，尽量召回已有长期记忆
+            raw_memory = self.memory_vs.search(q_emb, self.memory_recall_k, 4.0)
             if raw_memory:
-                memory_docs = raw_memory[:self.memory_rerank_k]
+                memory_docs = self.reranker_model.rank(query, raw_memory, self.memory_rerank_k)
 
         return {
             "base_context": "无。",
