@@ -2,11 +2,11 @@
 
 ## 项目简介
 
-本项目是一个基于本地化大模型 `Ollama + Llama3:8B`、`BGE-small-zh-v1.5`、`BGE-reranker-base` 与 `FAISS` 向量库构建的本地化 Memory RAG 系统。
+本项目是一个基于本地化大模型 `Ollama + Llama3:8B`、`BGE-small-zh-v1.5`、`BGE-reranker-base` 与 `FAISS` 向量库构建的本地化 Memory RAG / Agent Pipeline 原型系统。
 
-系统设计了独立的 `MemoryManager` 动态记忆管理器，将静态基础知识库 `Base Knowledge` 与用户长期记忆库 `User Memory` 进行物理隔离；同时在 `RAGPipeline` 前置轻量级 `QueryPolicy` 意图分流层，将用户输入划分为 `direct_chat`、`memory_write`、`memory_recall` 和 `normal_rag` 四类，并根据不同意图选择不同处理路径。
+系统面向多轮问答中的长期记忆管理问题，设计了“冷-温-热”数据分层结构：冷数据保存原始知识文档，温数据维护 `Base Knowledge` 与 `User Memory` 两个 FAISS 向量库，热数据保留当前会话的短期上下文窗口。通过这种方式，系统将静态知识、长期用户记忆和当前对话历史进行隔离管理，降低基础知识与用户记忆之间的交叉污染。
 
-系统不仅能够基于静态基础知识库进行问答，还能在多轮对话中选择性沉淀用户目标、偏好和计划，并支持程序重启后的长期记忆召回。
+在在线问答阶段，系统在 `RAGPipeline` 前置轻量级 `QueryPolicy` 意图分流层，将用户输入划分为 `direct_chat`、`memory_write`、`memory_recall` 和 `normal_rag` 四类，并根据不同意图选择不同处理路径。系统不仅能够基于静态基础知识库进行问答，还能在多轮对话中选择性沉淀用户目标、偏好和计划，并支持程序重启后的长期记忆召回。
 
 ---
 
@@ -16,31 +16,37 @@
 
 <div align="center">
   <img src="./assets/offline_cold_start.jpg" width="800">
-  <p><em>图 1: 离线冷启动：句子边界切分与基础知识库向量化</em></p>
+  <p><em>图 1：离线冷启动：原始文档切分、向量化与基础知识库构建</em></p>
 </div>
+
+离线阶段主要负责冷数据处理，即对原始知识文档进行句子边界切分、Embedding 向量化，并写入 `Base Knowledge FAISS`，为后续在线 RAG 检索提供稳定的静态知识来源。
 
 ### 2. 在线问答、意图路由与记忆沉淀闭环
 
 <div align="center">
   <img src="./assets/online_qa.jpg" width="800">
-  <p><em>图 2: 在线阶段：QueryPolicy 意图路由、双库检索与动态记忆更新</em></p>
+  <p><em>图 2：在线阶段：QueryPolicy 意图路由、双库召回、Prompt 组装与长期记忆写入闭环</em></p>
 </div>
+
+图 2 展示了在线问答阶段的完整闭环。用户输入首先经过 `QueryPolicy` 进行意图分流，划分为 `direct_chat`、`memory_write`、`memory_recall` 和 `normal_rag` 四类；其中 `normal_rag` 会进入 `Base FAISS` 与 `Memory FAISS` 双库召回，并通过 `bge-reranker-base` 进行二阶段精排。系统随后将基础知识、长期用户记忆、短期对话窗口与当前 Query 组装为最终 Prompt，交由 `Llama3:8B` 生成回答。回答生成后，`MemoryManager` 会根据记忆价值和新奇度判断，决定是否将当前 `[query, answer]` 写入 `User Memory`，从而形成长期记忆沉淀闭环。
 
 ---
 
 ## 核心架构亮点
 
+- **冷-温-热数据分层架构**：将原始文档、双 FAISS 向量库和短期对话窗口分别作为冷数据、温数据和热数据管理，实现静态知识、长期用户记忆与当前会话历史的隔离。
+
 - **轻量级 QueryPolicy 意图分流**：在 `RAGPipeline` 前置规则式意图判断，将用户输入划分为 `direct_chat`、`memory_write`、`memory_recall` 与 `normal_rag` 四类。身份闲聊类问题直接旁路回答，用户目标 / 计划 / 偏好类输入进入长期记忆写入流程，历史记忆回忆类问题走专门的 `User Memory` 检索路径，普通知识问答则进入完整 RAG 检索链路。
 
-- **双库向量检索架构**：物理隔离 `Base Knowledge`（静态基础知识库）与 `User Memory`（动态长期记忆库），降低日常对话、基础知识和用户长期记忆之间的交叉污染。
+- **双库向量检索架构**：物理隔离 `Base Knowledge`（静态基础知识库）与 `User Memory`（动态长期记忆库），避免将基础知识、日常闲聊和用户长期记忆混入同一个向量空间，降低记忆污染风险。
 
-- **动态记忆管理机制**：通过 `MemoryManager` 对用户目标、计划、偏好等信息进行价值过滤、新奇度判断和长期记忆写入，避免将普通知识问答或闲聊内容全部写入用户记忆库。
+- **动态记忆管理机制**：通过 `MemoryManager` 对用户目标、计划、偏好等信息进行价值过滤、新奇度判断和长期记忆写入控制，避免将普通知识问答或重复闲聊内容全部写入用户记忆库。
 
-- **Bi-Encoder + Cross-Encoder 两阶段检索**：使用 `bge-small-zh-v1.5` 进行向量召回，再使用 `bge-reranker-base` 进行精排，提升基础知识库与长期记忆库的检索质量。
+- **Bi-Encoder + Cross-Encoder 两阶段检索**：使用 `bge-small-zh-v1.5` 进行向量召回，再使用 `bge-reranker-base` 进行二阶段精排，提升基础知识库与长期记忆库的检索相关性。
 
 - **历史记忆回忆检索策略**：针对“我之前说过什么 / 你还记得我吗”等泛化记忆查询，单独采用 `memory_recall` 检索路径，优先检索 `User Memory`，跳过 `Base Knowledge` 干扰，并避免将回忆类 Query 再次写入长期记忆库，提升重启后长期记忆召回稳定性。
 
-- **U 型 Prompt 组装策略**：将基础知识库放在 Prompt 前部，近期连续对话放在 Prompt 后部，结合大模型首尾注意力偏好，缓解部分 Lost in the Middle 现象。
+- **U 型 Prompt 组装策略**：将基础知识库内容放在 Prompt 前部，将近期连续对话放在 Prompt 后部，结合大模型首尾注意力偏好，缓解部分 Lost in the Middle 现象。
 
 - **显存监控与可视化**：系统内置后台显存监控线程，在运行结束或异常退出时生成显存变化折线图，便于观察本地模型运行时的资源占用情况。
 
@@ -149,21 +155,17 @@ python main.py
 
 ## 后续架构演进路线 Future Work
 
-在当前 V1.0 系统基础上，后续可以从数据治理、检索策略、记忆生命周期和 Agent 化方向继续迭代。
+在当前 V1.0 系统基础上，后续可以从数据治理、检索策略、记忆生命周期、底层推理优化和 Agent 化方向继续迭代。
 
-- **轻量 QueryPolicy 意图分流与后续升级**：当前版本已实现基于规则的轻量级 QueryPolicy，将输入划分为身份闲聊、长期记忆写入、历史记忆回忆与普通 RAG 问答四类，并在 Pipeline 层选择不同处理策略。后续可进一步升级为语义级 Query Router。
+- **数据治理与检索工程精细化**：真实业务场景中的原始文档通常包含噪声、重复段落、格式错乱和无效文本。后续可重构底层 Data ETL 管道，加入更细粒度的文本清洗、重复内容过滤和 Metadata 标注，从源头提升 Chunking 与向量检索质量。
 
-- **语义级 Query Router**：后续可引入 embedding-based intent matching、轻量分类器或 LLM Router，提升对模糊表达、多意图 Query 和复杂任务指令的泛化能力。
+- **Metadata 混合检索与时间衰减机制**：后续可为文本块增加来源、时间、类型等 Metadata 字段，并结合向量检索和元数据过滤。对于动态记忆库，可以引入时间衰减权重，让近期记忆在用户相关问题中拥有更高召回优先级；而基础知识库保持稳定召回，不做时间衰减，从而区分“客观知识”和“用户记忆”的不同生命周期。
 
-- **工业级数据预处理与治理 Data ETL Pipeline**：重构数据接入层，引入更精细的文本清洗、去噪、去重和语义切分策略，提升 Chunking 质量，从源头减少 RAG 系统的“垃圾进，垃圾出”问题。
+- **记忆生命周期管理 Memory Lifecycle**：当前系统主要通过静态距离阈值进行新奇度判断。后续可引入检索频率、最近访问时间、记忆价值评分等因素，对长期未被激活的低价值记忆进行合并、降级或删除，降低长期记忆库膨胀带来的检索噪声。
 
-- **Metadata 混合检索与时序衰减机制 Hybrid Search & Time Decay**：在文本切片入库前提取实体、时间、来源等元信息，结合向量检索和元数据过滤；同时在 User Memory 中引入时间衰减权重，使近期记忆在用户相关问题中拥有更高优先级。
+- **结合长上下文研究做底层推理优化**：当前项目主要从外部记忆角度实现 Memory RAG，即通过 FAISS 向量库承接被挤出上下文窗口的长期信息。后续希望结合 KV Cache 和长文本记忆方向的研究，进一步探索推理阶段的选择性 KV 写入与驱逐策略，形成“内部 KV 工作记忆 + 外部 FAISS 长期记忆”的双层记忆结构。
 
-- **外部 KV Buffer 与摘要索引优化**：探索以结构化 Key-Value 形式管理动态记忆，并在原始记忆写入前抽取摘要或核心意图，实现“摘要建库，原文召回”，降低长期记忆库膨胀带来的检索噪声。
-
-- **基于动态阈值的记忆生命周期管理 Memory Lifecycle & Eviction**：升级当前静态距离阈值去重逻辑，引入检索频率、最近访问时间和记忆价值评分，对长期未被激活的低价值记忆进行合并、降级或删除。
-
-- **向 Agentic RAG 演进**：将基础知识库检索、用户记忆检索和外部工具调用封装为 Tools，由大模型根据任务目标自主规划调用顺序，实现从被动检索到主动探查的范式升级。
+- **向具备长期记忆管理能力的 Agentic RAG 演进**：当前版本已经实现轻量级 `SimpleQueryPolicy`，可以区分 `direct_chat`、`memory_write`、`memory_recall` 和 `normal_rag` 四类请求，解决所有 Query 都强行进入 RAG 检索链路的问题。但目前的 QueryPolicy 仍然基于关键词规则，泛化能力有限，且长期记忆的召回、写入与更新仍依赖固定流程控制。后续可以将规则路由升级为语义路由，例如使用轻量分类模型、Embedding 相似度路由或 LLM Router 判断用户意图。在此基础上，可以进一步将 `Base FAISS` 检索、`Memory FAISS` 检索、长期记忆写入、记忆更新与去重封装为工具能力，让大模型根据任务需求主动决定是否检索知识库、召回用户记忆或沉淀新记忆，从固定流程的 Pipeline RAG 演进到具备长期记忆管理能力的 Agentic RAG。
 
 ---
 
